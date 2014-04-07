@@ -1,5 +1,5 @@
 """
-This script write all the stylistic feature (ssXX) needed for your font and print them in the Ouput Window
+This script write all the stylistic set feature needed for your font and print them in the Ouput Window
 """
 
 font = CurrentFont()
