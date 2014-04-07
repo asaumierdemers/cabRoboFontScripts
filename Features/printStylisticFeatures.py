@@ -1,3 +1,7 @@
+"""
+This script write all the stylistic feature (ssXX) needed for your font and print them in the Ouput Window
+"""
+
 font = CurrentFont()
 
 stylisticGlyphNames = [name for name in font.keys() if ".ss" in name]
