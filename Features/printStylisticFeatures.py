@@ -1,6 +1,5 @@
 """
 This script write all the stylistic set feature needed for your font and print them in the Ouput Window
-james rules
 """
 
 font = CurrentFont()
