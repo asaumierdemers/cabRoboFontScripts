@@ -10,7 +10,7 @@ for ss in stylisticSets:
     glyphSet = sorted([name for name in stylisticGlyphNames if ss in name])
     
     feature = "ss" + ss
-    print "features %s {" % feature
+    print "feature %s {" % feature
     for glyph in glyphSet:
         baseGlyph = glyph.split("."+feature)[0]
         print "\tsub %s by %s;" % (baseGlyph, glyph)
