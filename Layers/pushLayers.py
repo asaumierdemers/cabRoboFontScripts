@@ -1,6 +1,3 @@
-font = CurrentFont()
-glyph = CurrentGlyph()
-
 def pushLayers(glyph):
 
     if glyph is None:
@@ -39,5 +36,8 @@ def pushLayers(glyph):
         
     font.update()
     
+    
+font = CurrentFont()
+glyph = CurrentGlyph()
 
 pushLayers(glyph)
