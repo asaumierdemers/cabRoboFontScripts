@@ -10,6 +10,13 @@ if len(selection) == 2:
     
     if contour == p2.getParent():
         
+        index = glyph.contours.index(contour)
+
+        otherContours = glyph.contours
+        otherContours.pop(index)
+        
+        glyph.prepareUndo("splitContour")
+        
         copy = glyph.copy()
         copy.clear()
         pen = copy.getPointPen()
@@ -36,11 +43,16 @@ if len(selection) == 2:
                 else:
                     pen.addPoint((p.x, p.y))
             pen.endPath()
+        
+        for c in otherContours:
+            copy.appendContour(c)
                     
         glyph.clear()
 
         glyph.appendGlyph(copy)
                 
         glyph.update()
+        
+        glyph.performUndo()
         
         

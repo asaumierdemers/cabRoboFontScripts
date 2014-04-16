@@ -1,13 +1,16 @@
 from fontTools.misc.bezierTools import splitCubicAtT
 import math
 
-offset = 20
+offset = 40
 t = 1.1
 
 def getOffset(offset, (x1, y1), (x2, y2)):
     
     length = math.sqrt((x2-x1)**2 + (y2-y1)**2)
-
+    
+    if length == 0:
+        return None
+    
     ox = (x2-x1)/length*offset
     oy = (y2-y1)/length*offset
     
@@ -27,7 +30,12 @@ def offsetSegment(prevSegment, segment, reverse=False):
         x1, y1 = p1.x, p1.y
         x2, y2 = p2.x, p2.y
         
-        ox, oy = getOffset(offset, (x1, y1), (x2, y2))
+        o = getOffset(offset, (x1, y1), (x2, y2))
+
+        if o:
+            ox, oy = o
+        else:
+            return
 
         segment.move((ox, oy))
     
@@ -51,7 +59,12 @@ def offsetSegment(prevSegment, segment, reverse=False):
         x1, y1 = curve[3]
         x2, y2 = curve[2]
         
-        ox, oy = getOffset(offset, (x1, y1), (x2, y2))
+        o = getOffset(offset, (x1, y1), (x2, y2))
+
+        if o:
+            ox, oy = o
+        else:
+            return
         
         if reverse:
             prevSegment, segment = segment, prevSegment
@@ -82,7 +95,17 @@ def addOverlap():
         bx, by = pointB.x, pointB.y
         
         index = indexB
-        insertIndex = (index+1) % len(contour)   
+        insertIndex = (index+1) % len(contour)
+        
+        # index shift, annoying fix for index error when inserting segment
+        j = 0
+        # check if first or last point
+        if insertIndex == 0 or insertIndex == len(contour)-1:
+            # but if is last point and curve don't shift
+            if insertIndex == len(contour)-1 and contour[-1].type == "curve":
+                j = 0
+            else:
+                j = 1
             
         contour.insertSegment(insertIndex, "line", [(bx, by)])
         
@@ -94,16 +117,6 @@ def addOverlap():
          /    \
         A      D
         """
-        
-        # index shift, annoying fix for index error when inserting segment
-        j = 0
-        # check if first or last point
-        if insertIndex == 0 or insertIndex == len(contour)-1:
-            # but if is last point and curve don't shift
-            if insertIndex == len(contour)-1 and contour[-1].type == "curve":
-                j = 0
-            else:
-                j = 1 
                         
         indexA = (index-1+j) % len(contour)
         indexB = (index+0+j) % len(contour)
@@ -114,7 +127,7 @@ def addOverlap():
         segmentB = contour[indexB]
         segmentC = contour[indexC]
         segmentD = contour[indexD]
-                
+                        
         offsetSegment(segmentA, segmentB)
         offsetSegment(segmentC, segmentD, True)
             
