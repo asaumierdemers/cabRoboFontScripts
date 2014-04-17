@@ -1,12 +1,19 @@
-from fontTools.misc.bezierTools import splitCubicAtT
+"""
+This script will create an overlap for the selected point.
+If the segment is a curve, it will use the offCurves for the overlap direction.
+"""
 import math
 
-offset = 40
-t = 1.1
+offset = 30
+
+
+def getLength((x1, y1), (x2, y2)):
+    return math.sqrt((x2-x1)**2 + (y2-y1)**2)
+    
 
 def getOffset(offset, (x1, y1), (x2, y2)):
     
-    length = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+    length = getLength((x1, y1), (x2, y2))
     
     if length == 0:
         return None
@@ -19,58 +26,51 @@ def getOffset(offset, (x1, y1), (x2, y2)):
 
 def offsetSegment(prevSegment, segment, reverse=False):
     
-    if segment.type == "line":
-        
-        if reverse:
-            prevSegment, segment = segment, prevSegment
-        
-        p1 = prevSegment.onCurve
-        p2 = segment.onCurve
-                
-        x1, y1 = p1.x, p1.y
-        x2, y2 = p2.x, p2.y
-        
-        o = getOffset(offset, (x1, y1), (x2, y2))
-
-        if o:
-            ox, oy = o
-        else:
-            return
-
-        segment.move((ox, oy))
+    p1 = prevSegment.onCurve
+    p2 = segment.onCurve
     
+    p1 = p1.x, p1.y
+    p2 = p2.x, p2.y
+    
+    if reverse: # change direction
+        p1, p2 = p2, p1
+    
+    isCurve = False
     if segment.type == "curve":
         
-        p1 = prevSegment.onCurve
-        p2, p3 = segment.offCurve
-        p4 = segment.onCurve
+        q1, q2 = segment.offCurve
         
-        if reverse:
-            p1, p2, p3, p4 = p4, p3, p2, p1
-                
-        p1 = p1.x, p1.y
-        p2 = p2.x, p2.y
-        p3 = p3.x, p3.y
-        p4 = p4.x, p4.y
+        q1 = q1.x, q1.y
+        q2 = q2.x, q2.y
         
-        curves = splitCubicAtT(p1, p2, p3, p4, t)
-        curve = curves[1]
+        if reverse: # change direction
+            q1, q2 = q2, q1
         
-        x1, y1 = curve[3]
-        x2, y2 = curve[2]
+        # check that off curves are not overlapping
+        if q2 != p2:
+            isCurve = True
         
-        o = getOffset(offset, (x1, y1), (x2, y2))
+    if isCurve:
+        
+        x1, y1 = q2
+        x2, y2 = p2
+    
+    else: # is line
+        
+        x1, y1 = p1
+        x2, y2 = p2
+        
+    o = getOffset(offset, (x1, y1), (x2, y2))
 
-        if o:
-            ox, oy = o
-        else:
-            return
-        
-        if reverse:
-            prevSegment, segment = segment, prevSegment
-        
-        segment.onCurve.move((ox, oy))
-        
+    if o:
+        ox, oy = o
+    else:
+        return
+    
+    if reverse: # change direction
+        prevSegment, segment = segment, prevSegment
+
+    segment.onCurve.move((ox, oy))
         
 
 def addOverlap():
@@ -80,54 +80,35 @@ def addOverlap():
 
     if len(selection) == 1:
     
-        s = selection[0]
-    
         glyph.prepareUndo("addOverlap")
-    
-        contour = s.getParent()
-            
-        indexB = contour.segments.index(s)
+
+        s = selection[0]    
         
-        pointB = s.onCurve
-        pointB.selected = False
+        contour = s.getParent()            
         
-        # doubling the point B to C
-        bx, by = pointB.x, pointB.y
+        point = s.onCurve
+        point.selected = False
         
-        index = indexB
+        x, y = point.x, point.y
+        
+        index = contour.segments.index(s)
         insertIndex = (index+1) % len(contour)
-        
-        # index shift, annoying fix for index error when inserting segment
-        j = 0
-        # check if first or last point
-        if insertIndex == 0 or insertIndex == len(contour)-1:
-            # but if is last point and curve don't shift
-            if insertIndex == len(contour)-1 and contour[-1].type == "curve":
-                j = 0
-            else:
-                j = 1
             
-        contour.insertSegment(insertIndex, "line", [(bx, by)])
+        contour.insertSegment(insertIndex, "line", [(x, y)])
         
-        """
-          C--B
-           \/
-           /\
-          /  \
-         /    \
-        A      D
-        """
+        # get the new index from the initial segment
+        index = contour.segments.index(s)
                         
-        indexA = (index-1+j) % len(contour)
-        indexB = (index+0+j) % len(contour)
-        indexC = (index+1+j) % len(contour)
-        indexD = (index+2+j) % len(contour)
+        indexA = (index-1) % len(contour)
+        indexB = (index+0) % len(contour)
+        indexC = (index+1) % len(contour)
+        indexD = (index+2) % len(contour)
                 
         segmentA = contour[indexA]
         segmentB = contour[indexB]
         segmentC = contour[indexC]
         segmentD = contour[indexD]
-                        
+                
         offsetSegment(segmentA, segmentB)
         offsetSegment(segmentC, segmentD, True)
             
